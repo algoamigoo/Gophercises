@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ func main() {
 	// Define command-line flags
 	csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
 	timeLimit := flag.Int("limit", 15, "the time limit for the quiz in seconds")
+	shuffle := flag.Bool("shuffle", false, "shuffle the quiz questions order")
 	flag.Parse()
 
 	// Open the CSV File
@@ -29,7 +31,7 @@ func main() {
 	}
 	defer file.Close()
 
-	// 1. Parse upfront into a slice
+	// 1. Parse upfront into a slice with string cleaning
 	reader := csv.NewReader(file)
 	var problems []problem
 
@@ -41,25 +43,35 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error reading CSV record: %v", err)
 		}
+
+		// Clean up CSV values on import
 		problems = append(problems, problem{
-			q: record[0],
-			a: strings.TrimSpace(record[1]),
+			q: strings.TrimSpace(record[0]),
+			a: cleanString(record[1]),
+		})
+	}
+
+	// Shuffle questions if flag is enabled
+	if *shuffle {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r.Shuffle(len(problems), func(i, j int) {
+			problems[i], problems[j] = problems[j], problems[i]
 		})
 	}
 
 	fmt.Printf("--- Quiz Starts (Time Limit: %ds) ---\n", *timeLimit)
 
 	score := 0
-	
+
 	// Deferred closure ensures final score prints whether time expires or quiz finishes
 	defer func() {
 		fmt.Printf("\nYour score is %d out of %d!\n", score, len(problems))
 	}()
 
-	// Initialize timer with the custom flag value
+	// Initialize timer
 	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
 
-	// 2. Run the quiz
+	// 2. Run the quiz loop
 	for i, p := range problems {
 		fmt.Printf("Question %d: %s = ", i+1, p.q)
 
@@ -75,9 +87,15 @@ func main() {
 			fmt.Println("\nTime's up!")
 			return
 		case response := <-ansCh:
-			if strings.TrimSpace(response) == p.a {
+			// Normalize user input and compare against cleaned target answer
+			if cleanString(response) == p.a {
 				score++
 			}
 		}
 	}
+}
+
+// Helper function to strip leading/trailing whitespace and normalize to lowercase
+func cleanString(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
 }
