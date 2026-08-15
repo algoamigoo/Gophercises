@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -16,13 +17,19 @@ type problem struct {
 }
 
 func main() {
-	file, err := os.Open("problems.csv")
+	// Define command-line flags
+	csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+	timeLimit := flag.Int("limit", 15, "the time limit for the quiz in seconds")
+	flag.Parse()
+
+	// Open the CSV File
+	file, err := os.Open(*csvFilename)
 	if err != nil {
-		log.Fatalf("Failed to open file: %v", err)
+		log.Fatalf("Failed to open file '%s': %v", *csvFilename, err)
 	}
 	defer file.Close()
 
-	// Parse all problems upfront so total count is known
+	// 1. Parse upfront into a slice
 	reader := csv.NewReader(file)
 	var problems []problem
 
@@ -40,16 +47,19 @@ func main() {
 		})
 	}
 
-	fmt.Println("Quiz starts!")
+	fmt.Printf("--- Quiz Starts (Time Limit: %ds) ---\n", *timeLimit)
 
 	score := 0
-	// Deferred evaluation ensures final score prints on normal exit or timer expiration
+	
+	// Deferred closure ensures final score prints whether time expires or quiz finishes
 	defer func() {
 		fmt.Printf("\nYour score is %d out of %d!\n", score, len(problems))
 	}()
 
-	timer := time.NewTimer(15 * time.Second)
+	// Initialize timer with the custom flag value
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
 
+	// 2. Run the quiz
 	for i, p := range problems {
 		fmt.Printf("Question %d: %s = ", i+1, p.q)
 
