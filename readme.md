@@ -1,0 +1,1 @@
+This Repo is created with the intention of learning Go lang via small projects as in Gophercises, great resource by Jor Calhour. I will be solving each project problem myself and code all of them in this Repo.
