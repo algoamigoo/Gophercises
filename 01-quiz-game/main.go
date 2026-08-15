@@ -6,46 +6,68 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
+	"time"
 )
 
-func main()  {
-	// open the CSV File
-	file,err :=os.Open("problems.csv")
-	if err!=nil {
-		log.Fatalf("Failed to open file : %v",err)
+type problem struct {
+	q string
+	a string
+}
+
+func main() {
+	file, err := os.Open("problems.csv")
+	if err != nil {
+		log.Fatalf("Failed to open file: %v", err)
 	}
-
 	defer file.Close()
-	
-	//initialize CSV reader
-	reader := csv.NewReader(file)
-	fmt.Println("quiz starts")
 
-	// read line by line
-	i := 1
-	score :=0
+	// Parse all problems upfront so total count is known
+	reader := csv.NewReader(file)
+	var problems []problem
+
 	for {
-		record,err := reader.Read()
-		if(err==io.EOF){
-			break // End of file reached
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
 		}
-		if(err!=nil){
+		if err != nil {
 			log.Fatalf("Error reading CSV record: %v", err)
 		}
-		question :=record[0]
-		answer :=record[1]
-		
-		fmt.Printf("question %d : %s = \n", i, question)
-		i++
-		var response string
-		_, err = fmt.Scan(&response)
-		if err != nil {
-			fmt.Println("Invalid input:", err)
+		problems = append(problems, problem{
+			q: record[0],
+			a: strings.TrimSpace(record[1]),
+		})
+	}
+
+	fmt.Println("Quiz starts!")
+
+	score := 0
+	// Deferred evaluation ensures final score prints on normal exit or timer expiration
+	defer func() {
+		fmt.Printf("\nYour score is %d out of %d!\n", score, len(problems))
+	}()
+
+	timer := time.NewTimer(15 * time.Second)
+
+	for i, p := range problems {
+		fmt.Printf("Question %d: %s = ", i+1, p.q)
+
+		ansCh := make(chan string)
+		go func() {
+			var res string
+			fmt.Scan(&res)
+			ansCh <- res
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Println("\nTime's up!")
 			return
-		}
-		if response ==answer {
-			score++
+		case response := <-ansCh:
+			if strings.TrimSpace(response) == p.a {
+				score++
+			}
 		}
 	}
-	fmt.Printf("\nYour score is %d out of %d!\n", score, i-1)
 }
