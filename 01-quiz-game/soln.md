@@ -1,8 +1,8 @@
+# Go Standard Library Reference: File I/O, Text Processing & CLI
 
+This document provides a consolidated reference of the Go standard library packages and methods used in the CSV quiz application, along with closely related alternatives.
 
-# Go Standard Library Reference: File I/O & Text Processing
-
-This document provides a consolidated reference of the Go standard library packages and methods used in the CSV quiz application, alongside closely related alternatives for file handling, stream processing, text manipulation, and formatting.
+---
 
 ## 1. `os` (File & System I/O)
 
@@ -66,5 +66,30 @@ This document provides a consolidated reference of the Go standard library packa
 | :--- | :--- | :--- |
 | **`log.Fatalf(format, v...)`** | **Used** | Prints formatted log messages to stderr and exits the program immediately (`os.Exit(1)`). |
 | `json.NewDecoder(r).Decode(v)` | *Related* | Parses structured JSON data directly from a file stream into a struct/map. |
-Go_Standard_Library_Reference.md
-Displaying Go_Standard_Library_Reference.md.
+
+---
+
+## 7. `flag` (Command-Line Flags)
+
+### What is the `flag` package?
+
+The `flag` package is part of Go’s standard library.  
+It provides a simple and idiomatic way to define and parse command-line flags (also called options or switches).
+
+Instead of manually inspecting `os.Args`, you declare the flags you need, give them default values and help text, and then call `flag.Parse()`. After parsing, the package automatically fills in the values.
+
+It is the standard way in Go to accept configuration from the command line.
+
+### Basic Usage Pattern
+
+```go
+csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+timeLimit  := flag.Int("limit", 15, "the time limit for the quiz in seconds")
+shuffle    := flag.Bool("shuffle", false, "shuffle the quiz questions order")
+
+flag.Parse()
+
+// Use the values (they are pointers)
+fmt.Println(*csvFilename)
+fmt.Println(*timeLimit)
+fmt.Println(*shuffle)
