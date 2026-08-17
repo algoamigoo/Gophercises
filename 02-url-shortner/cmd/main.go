@@ -30,7 +30,7 @@ func main() {
 
 	// Register specific endpoints
 	mux.HandleFunc("/hello", hello)
-	mux.HandleFunc("/headers", headers) 
+	mux.HandleFunc("/headers", headers)
 
 	// Catch-all route for paths not found in mux
 	mux.HandleFunc("/", fallback)
